@@ -1,0 +1,70 @@
+# Android Studio / IntelliJ
+.idea/
+*.iml
+.gradle/
+
+# Gradle
+/build/
+**/build/
+
+# Local configuration file (should not be committed)
+/local.properties
+
+# Log files
+*.log
+
+# Android generated files
+/captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.ap_
+*.dex
+*.class
+*.so
+*.o
+*.obj
+
+# Keystore files (sensitive)
+*.jks
+*.keystore
+secret-*.properties
+secrets.properties
+.env
+.env.local
+
+# Kotlin/Java
+*.kotlin_module
+
+# Crashlytics
+crashlytics.properties
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# NDK
+obj/
+libs/
+
+# IntelliJ specific (keep if you need certain project files)
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/gradle.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+
+# Ignore local Gradle wrapper jar? Usually you keep gradle/wrapper/gradle-wrapper.jar
+# but ignore any temporary wrapper files
+.gradle-wrapper.jar
+
+# Others
+*.orig
+
+# Optional: ignore Android Studio run configurations
+*.run.xml
+
+# Keep gradle wrapper properties and jar tracked (recommended)
+# /gradle/wrapper/gradle-wrapper.properties
+# /gradle/wrapper/gradle-wrapper.jar
+
