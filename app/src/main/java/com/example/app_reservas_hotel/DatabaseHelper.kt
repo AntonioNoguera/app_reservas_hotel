@@ -9,76 +9,73 @@ import android.database.sqlite.SQLiteOpenHelper
 class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName, null, databaseVersion) {
     companion object {
         private const val dataBaseName = "hotel_reservas.db"
-        private const val databaseVersion = 1
+        private const val databaseVersion = 2 // <- incrementado para forzar onUpgrade
     }
 
     override fun onCreate(db: SQLiteDatabase?) {
         db?.execSQL(
             """
-                 CREATE TABLE IF NOT EXISTS usuarios (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT NOT NULL,
-                    password TEXT NOT NULL
-                 );
-            """.trimIndent()
+                             CREATE TABLE IF NOT EXISTS usuarios (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                username TEXT NOT NULL UNIQUE,
+                                password TEXT NOT NULL
+                             );
+                        """.trimIndent()
         )
         db?.execSQL(
             """
-                CREATE TABLE IF NOT EXISTS HOTELES (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    nombre TEXT NOT NULL,
-                    direccion TEXT NOT NULL,
-                    telefono TEXT NOT NULL
-                );
-            """.trimIndent()
+                            CREATE TABLE IF NOT EXISTS HOTELES (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                nombre TEXT NOT NULL,
+                                direccion TEXT NOT NULL,
+                                telefono TEXT NOT NULL
+                            );
+                        """.trimIndent()
         )
         db?.execSQL(
             """
-                CREATE TABLE IF NOT EXISTS habitaciones (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id_hotel INTEGER NOT NULL,
-                    numero_habitacion INTEGER NOT NULL,
-                    tipo TEXT NOT NULL,
-                    precio REAL NOT NULL
-                );
-            """.trimIndent()
+                            CREATE TABLE IF NOT EXISTS habitaciones (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                id_hotel INTEGER NOT NULL,
+                                numero_habitacion INTEGER NOT NULL,
+                                tipo TEXT NOT NULL,
+                                precio REAL NOT NULL
+                            );
+                        """.trimIndent()
         )
         db?.execSQL(
             """
-                 CREATE TABLE IF NOT EXISTS reservas (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id_hotel INTEGER NOT NULL,
-                    id_habitacion INTEGER NOT NULL,
-                    id_usuario INTEGER NOT NULL,
-                    nombre TEXT NOT NULL,
-                    fecha_entrada TEXT NOT NULL,
-                    fecha_salida TEXT NOT NULL,
-                    numero_habitacion INTEGER NOT NULL
-                );
-            """.trimIndent()
+                             CREATE TABLE IF NOT EXISTS reservas (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                id_hotel INTEGER NOT NULL,
+                                id_habitacion INTEGER NOT NULL,
+                                id_usuario INTEGER NOT NULL,
+                                nombre TEXT NOT NULL,
+                                fecha_entrada TEXT NOT NULL,
+                                fecha_salida TEXT NOT NULL,
+                                numero_habitacion INTEGER NOT NULL
+                            );
+                        """.trimIndent()
         )
 
-        // Intentar insertar datos de prueba al crear la base de datos
         db?.let { insertTestData(it) }
     }
 
-    // Asegurar que si la DB se abre y está vacía se inserten los datos de prueba
+    // eliminar onOpen para no re-intentar insertar datos en cada apertura
     override fun onOpen(db: SQLiteDatabase) {
         super.onOpen(db)
-        insertTestData(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
         db?.execSQL("DROP TABLE IF EXISTS reservas")
-        db?.execSQL("DROP TABLE IF EXISTS usuarios")
-        db?.execSQL("DROP TABLE IF EXISTS HOTELES")
         db?.execSQL("DROP TABLE IF EXISTS habitaciones")
+        db?.execSQL("DROP TABLE IF EXISTS HOTELES")
+        db?.execSQL("DROP TABLE IF EXISTS usuarios")
         onCreate(db)
     }
 
-    // Inserta datos de prueba: 5 hoteles y 5 habitaciones por hotel.
     private fun insertTestData(db: SQLiteDatabase) {
-        if (hasData(db, "HOTELES")) return  // evita duplicados si ya hay datos
+        if (hasData(db, "HOTELES")) return
 
         val hotelNames = listOf(
             "Hotel Sol y Mar",
@@ -102,6 +99,12 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
             "600-333-444",
             "600-444-555",
             "600-555-666"
+        )
+
+        val usuarios = listOf(
+            Pair("user1", "pass1"),
+            Pair("user2", "pass2"),
+            Pair("user3", "pass3")
         )
 
         val roomTypes = listOf("Individual", "Doble", "Suite", "Familiar", "Económica")
@@ -130,13 +133,21 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
                 }
                 basePrice += 20.0
             }
+
+            for (user in usuarios) {
+                val uv = ContentValues().apply {
+                    put("username", user.first)
+                    put("password", user.second)
+                }
+                db.insertWithOnConflict("usuarios", null, uv, SQLiteDatabase.CONFLICT_IGNORE)
+            }
+
             db.setTransactionSuccessful()
         } finally {
             db.endTransaction()
         }
     }
 
-    // Verifica si una tabla tiene datos
     private fun hasData(db: SQLiteDatabase, table: String): Boolean {
         val cursor: Cursor = db.rawQuery("SELECT COUNT(*) FROM $table", null)
         cursor.use {
@@ -147,6 +158,19 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
 
     fun mostrarDatosPrueba(db: SQLiteDatabase): String {
         val sb = StringBuilder()
+        val usuariosCursor = db.rawQuery("SELECT username,password FROM usuarios", null)
+        usuariosCursor.use {
+            if (it.moveToFirst()) {
+                sb.append("Usuarios registrados:\n")
+                do {
+                    val username = it.getString(0)
+                    val password = it.getString(1)
+                    sb.append(" - $username $password\n")
+                } while (it.moveToNext())
+            } else {
+                sb.append("No hay usuarios registrados.\n")
+            }
+        }
         val hotelsCursor = db.rawQuery("SELECT id, nombre, direccion, telefono FROM HOTELES", null)
         hotelsCursor.use { hc ->
             if (hc.moveToFirst()) {
@@ -158,7 +182,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
                     sb.append("Hotel: $hname\n")
                     sb.append("  Dirección: $haddr\n")
                     sb.append("  Teléfono: $hphone\n")
-                    // Obtener habitaciones de este hotel
                     val roomsCursor = db.rawQuery(
                         "SELECT numero_habitacion, tipo, precio FROM habitaciones WHERE id_hotel = ?",
                         arrayOf(hid.toString())
@@ -185,7 +208,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
         return sb.toString()
     }
 
-    // Sobrecarga para facilitar uso desde Activities: abre/cierra la BD internamente
     fun mostrarDatosPrueba(): String {
         val db = this.readableDatabase
         try {
@@ -201,14 +223,14 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
             put("username", username)
             put("password", password)
         }
-        val result = db.insert("usuarios", null, values)
+        val result = db.insertWithOnConflict("usuarios", null, values, SQLiteDatabase.CONFLICT_IGNORE)
         return result != -1L
     }
 
     fun iniciarSesion(username: String, password: String): Boolean {
         val db = this.readableDatabase
         val cursor = db.rawQuery(
-            "SELECT * FROM usuarios WHERE username = ? AND password = ?",
+            "SELECT id FROM usuarios WHERE username = ? AND password = ?",
             arrayOf(username, password)
         )
         cursor.use {
@@ -254,6 +276,4 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
         val result = db.delete("reservas", "id = ?", arrayOf(reservaId.toString()))
         return result > 0
     }
-
-
 }

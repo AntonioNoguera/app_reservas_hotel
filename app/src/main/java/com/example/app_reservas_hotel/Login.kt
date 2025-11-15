@@ -1,14 +1,17 @@
-// kotlin
+// File: `app/src/main/java/com/example/app_reservas_hotel/Login.kt`
 package com.example.app_reservas_hotel
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class Login : AppCompatActivity() {
     private val TAG = "login"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
@@ -18,15 +21,31 @@ class Login : AppCompatActivity() {
         val TboxPassword = findViewById<EditText>(R.id.TboxUsuarioPassword)
 
         BtnLogin.setOnClickListener {
-            if (TboxUser.text.toString().isNotEmpty() && TboxPassword.text.toString().isNotEmpty()) {
-                assignAttributesLogin(TboxUser, TboxPassword)
+            val username = TboxUser.text.toString().trim()
+            val password = TboxPassword.text.toString().trim()
+
+            if (username.isNotEmpty() && password.isNotEmpty()) {
+                attemptLogin(username, password)
+            } else {
+                Toast.makeText(this, "Ingrese usuario y contraseña", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    fun assignAttributesLogin(TboxUser: EditText, TboxPassword: EditText) {
-        val user = Dao(TboxUser.text.toString(), TboxPassword.text.toString())
-        Log.d(TAG, "Usuario creado: ${user.username}")
-        // aquí continúa la lógica de autenticación...
+    private fun attemptLogin(username: String, password: String) {
+        val dbHelper = DatabaseHelper(this)
+        try {
+            val success = dbHelper.iniciarSesion(username, password)
+            if (success) {
+                val intent = Intent(this, HotelesActivity::class.java)
+                intent.putExtra("username", username)
+                startActivity(intent)
+                finish()
+            } else {
+                Toast.makeText(this, "Usuario o contraseña incorrectos", Toast.LENGTH_SHORT).show()
+            }
+        } finally {
+            dbHelper.close()
+        }
     }
 }

@@ -11,20 +11,12 @@ import androidx.appcompat.app.AppCompatActivity
 class MainActivity : AppCompatActivity() {
 
     private val TAG = "MainActivity"
-    private val DELAY_MS = 5000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         val output = findViewById<TextView>(R.id.textView)
-
-        // Programar la redirección en el hilo principal (se ejecutará después de 5s)
-        Handler(Looper.getMainLooper()).postDelayed({
-            startActivity(Intent(this@MainActivity, Login::class.java))
-            finish()
-        }, DELAY_MS)
-
         // Lectura de BD en segundo plano (no bloquea la UI ni la redirección)
         Thread {
             try {
@@ -41,5 +33,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }.start()
+        // Programar la redirección en el hilo principal (se ejecutará después de 5s)
+        Handler(Looper.getMainLooper()).postDelayed({
+            startActivity(Intent(this@MainActivity, Login::class.java))
+            finish()
+        }, 5000L)
     }
 }
