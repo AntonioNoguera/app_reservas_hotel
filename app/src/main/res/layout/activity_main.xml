@@ -4,13 +4,10 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <TextView
-        android:id="@+id/textView"
+    <LinearLayout
+        android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Cargando..."
-        android:textSize="14sp"
-        android:lineSpacingExtra="4dp"
-        android:fontFamily="monospace" />
+        android:orientation="vertical" />
 
 </ScrollView>
