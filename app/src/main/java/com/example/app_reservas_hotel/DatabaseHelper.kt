@@ -5,63 +5,70 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import org.json.JSONArray
+import org.json.JSONException
+import org.json.JSONObject
+import java.io.IOException
 
-class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName, null, databaseVersion) {
+class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, dataBaseName, null, databaseVersion) {
     companion object {
         private const val dataBaseName = "hotel_reservas.db"
-        private const val databaseVersion = 2 // <- incrementado para forzar onUpgrade
+        private const val databaseVersion = 2
     }
 
     override fun onCreate(db: SQLiteDatabase?) {
         db?.execSQL(
             """
-                             CREATE TABLE IF NOT EXISTS usuarios (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                username TEXT NOT NULL UNIQUE,
-                                password TEXT NOT NULL
-                             );
-                        """.trimIndent()
+                CREATE TABLE IF NOT EXISTS usuarios (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL UNIQUE,
+                    password TEXT NOT NULL
+                );
+                """.trimIndent()
         )
         db?.execSQL(
             """
-                            CREATE TABLE IF NOT EXISTS HOTELES (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                nombre TEXT NOT NULL,
-                                direccion TEXT NOT NULL,
-                                telefono TEXT NOT NULL
-                            );
-                        """.trimIndent()
+                CREATE TABLE IF NOT EXISTS HOTELES (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nombre TEXT NOT NULL,
+                    direccion TEXT NOT NULL,
+                    telefono TEXT NOT NULL,
+                    foto TEXT
+                );
+                """.trimIndent()
         )
         db?.execSQL(
             """
-                            CREATE TABLE IF NOT EXISTS habitaciones (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                id_hotel INTEGER NOT NULL,
-                                numero_habitacion INTEGER NOT NULL,
-                                tipo TEXT NOT NULL,
-                                precio REAL NOT NULL
-                            );
-                        """.trimIndent()
+                CREATE TABLE IF NOT EXISTS habitaciones (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id_hotel INTEGER NOT NULL,
+                    numero_habitacion INTEGER NOT NULL,
+                    tipo TEXT NOT NULL,
+                    precio REAL NOT NULL,
+                    foto TEXT
+                );
+                """.trimIndent()
         )
         db?.execSQL(
             """
-                             CREATE TABLE IF NOT EXISTS reservas (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                id_hotel INTEGER NOT NULL,
-                                id_habitacion INTEGER NOT NULL,
-                                id_usuario INTEGER NOT NULL,
-                                nombre TEXT NOT NULL,
-                                fecha_entrada TEXT NOT NULL,
-                                fecha_salida TEXT NOT NULL,
-                                numero_habitacion INTEGER NOT NULL
-                            );
-                        """.trimIndent()
+                CREATE TABLE IF NOT EXISTS reservas (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id_hotel INTEGER NOT NULL,
+                    id_habitacion INTEGER NOT NULL,
+                    id_usuario INTEGER NOT NULL,
+                    nombre TEXT NOT NULL,
+                    fecha_entrada TEXT NOT NULL,
+                    fecha_salida TEXT NOT NULL,
+                    numero_habitacion INTEGER NOT NULL
+                );
+                """.trimIndent()
         )
 
-        db?.let { insertTestData(it) }
+        db?.let {
+            insertFromAssets(it)
+        }
     }
 
-    // eliminar onOpen para no re-intentar insertar datos en cada apertura
     override fun onOpen(db: SQLiteDatabase) {
         super.onOpen(db)
     }
@@ -74,77 +81,87 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
         onCreate(db)
     }
 
-    private fun insertTestData(db: SQLiteDatabase) {
-        if (hasData(db, "HOTELES")) return
+    /**
+     * Intenta leer `assets/data.json` y poblar la base.
+     */
+    private fun insertFromAssets(db: SQLiteDatabase): Boolean {
+        val jsonString: String = try {
+            context.assets.open("data.json").bufferedReader().use { it.readText() }
+        } catch (e: IOException) {
+            return false
+        }
 
-        val hotelNames = listOf(
-            "Hotel Sol y Mar",
-            "Hotel La Rivera",
-            "Hotel Montaña Azul",
-            "Hotel Centro Plaza",
-            "Hotel Jardín del Lago"
-        )
-
-        val hotelAddresses = listOf(
-            "Av. del Mar 123",
-            "Calle Rivera 45",
-            "Camino Alto 78",
-            "Plaza Central 1",
-            "Paseo del Lago 9"
-        )
-
-        val hotelPhones = listOf(
-            "600-111-222",
-            "600-222-333",
-            "600-333-444",
-            "600-444-555",
-            "600-555-666"
-        )
-
-        val usuarios = listOf(
-            Pair("user1", "pass1"),
-            Pair("user2", "pass2"),
-            Pair("user3", "pass3")
-        )
-
-        val roomTypes = listOf("Individual", "Doble", "Suite", "Familiar", "Económica")
-        var basePrice = 50.0
-
-        db.beginTransaction()
         try {
-            for (i in hotelNames.indices) {
-                val hv = ContentValues().apply {
-                    put("nombre", hotelNames[i])
-                    put("direccion", hotelAddresses.getOrNull(i) ?: "Dirección desconocida")
-                    put("telefono", hotelPhones.getOrNull(i) ?: "000-000-000")
-                }
+            val root = JSONObject(jsonString)
+            val hotelesArray = root.optJSONArray("hoteles") ?: JSONArray()
+            val usuariosArray = root.optJSONArray("usuarios") ?: JSONArray()
 
-                val hotelId = db.insert("HOTELES", null, hv)
-                if (hotelId == -1L) continue
+            var insertedAny = false
+            db.beginTransaction()
+            try {
+                // Insertar hoteles y habitaciones
+                for (i in 0 until hotelesArray.length()) {
+                    val hObj = hotelesArray.optJSONObject(i) ?: continue
+                    val nombre = hObj.optString("nombre", "Hotel desconocido")
+                    val direccion = hObj.optString("direccion", "Dirección desconocida")
+                    val telefono = hObj.optString("telefono", "000-000-000")
+                    val fotoHotel = hObj.optString("foto", null)
 
-                for (roomIndex in 1..5) {
-                    val rv = ContentValues().apply {
-                        put("id_hotel", hotelId)
-                        put("numero_habitacion", roomIndex)
-                        put("tipo", roomTypes[(roomIndex - 1) % roomTypes.size])
-                        put("precio", basePrice + roomIndex * 10)
+                    val hv = ContentValues().apply {
+                        put("nombre", nombre)
+                        put("direccion", direccion)
+                        put("telefono", telefono)
+                        if (!fotoHotel.isNullOrEmpty()) {
+                            put("foto", fotoHotel)
+                        }
                     }
-                    db.insert("habitaciones", null, rv)
+
+                    val hotelId = db.insert("HOTELES", null, hv)
+                    if (hotelId == -1L) continue
+                    insertedAny = true
+
+                    val habitacionesArray = hObj.optJSONArray("habitaciones") ?: JSONArray()
+                    for (j in 0 until habitacionesArray.length()) {
+                        val rObj = habitacionesArray.optJSONObject(j) ?: continue
+                        val numero = rObj.optInt("numero_habitacion", j + 1)
+                        val tipo = rObj.optString("tipo", "Estándar")
+                        val precio = rObj.optDouble("precio", 50.0)
+                        val fotoHabitacion = rObj.optString("foto", null)
+
+                        val rv = ContentValues().apply {
+                            put("id_hotel", hotelId)
+                            put("numero_habitacion", numero)
+                            put("tipo", tipo)
+                            put("precio", precio)
+                            if (!fotoHabitacion.isNullOrEmpty()) {
+                                put("foto", fotoHabitacion)
+                            }
+                        }
+                        db.insert("habitaciones", null, rv)
+                    }
                 }
-                basePrice += 20.0
+
+                // Insertar usuarios
+                for (i in 0 until usuariosArray.length()) {
+                    val uObj = usuariosArray.optJSONObject(i) ?: continue
+                    val username = uObj.optString("username", null) ?: continue
+                    val password = uObj.optString("password", "")
+                    val uv = ContentValues().apply {
+                        put("username", username)
+                        put("password", password)
+                    }
+                    db.insertWithOnConflict("usuarios", null, uv, SQLiteDatabase.CONFLICT_IGNORE)
+                    insertedAny = true
+                }
+
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
             }
 
-            for (user in usuarios) {
-                val uv = ContentValues().apply {
-                    put("username", user.first)
-                    put("password", user.second)
-                }
-                db.insertWithOnConflict("usuarios", null, uv, SQLiteDatabase.CONFLICT_IGNORE)
-            }
-
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
+            return insertedAny
+        } catch (e: JSONException) {
+            return false
         }
     }
 
@@ -154,7 +171,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
             return if (it.moveToFirst()) it.getInt(0) > 0 else false
         }
     }
-
 
     fun mostrarDatosPrueba(db: SQLiteDatabase): String {
         val sb = StringBuilder()
@@ -171,7 +187,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
                 sb.append("No hay usuarios registrados.\n")
             }
         }
-        val hotelsCursor = db.rawQuery("SELECT id, nombre, direccion, telefono FROM HOTELES", null)
+
+        val hotelsCursor = db.rawQuery("SELECT id, nombre, direccion, telefono, foto FROM HOTELES", null)
         hotelsCursor.use { hc ->
             if (hc.moveToFirst()) {
                 do {
@@ -179,11 +196,14 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
                     val hname = hc.getString(1)
                     val haddr = hc.getString(2)
                     val hphone = hc.getString(3)
+                    val hfoto = hc.getString(4)
                     sb.append("Hotel: $hname\n")
                     sb.append("  Dirección: $haddr\n")
                     sb.append("  Teléfono: $hphone\n")
+                    sb.append("  Foto: ${hfoto ?: "Sin foto"}\n")
+
                     val roomsCursor = db.rawQuery(
-                        "SELECT numero_habitacion, tipo, precio FROM habitaciones WHERE id_hotel = ?",
+                        "SELECT numero_habitacion, tipo, precio, foto FROM habitaciones WHERE id_hotel = ?",
                         arrayOf(hid.toString())
                     )
                     roomsCursor.use { rc ->
@@ -193,7 +213,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
                                 val num = rc.getInt(0)
                                 val tipo = rc.getString(1)
                                 val precio = rc.getDouble(2)
-                                sb.append("    #$num - $tipo - \$${"%.2f".format(precio)}\n")
+                                val rfoto = rc.getString(3)
+                                sb.append("    #$num - $tipo - \$${"%.2f".format(precio)} - Foto: ${rfoto ?: "Sin foto"}\n")
                             } while (rc.moveToNext())
                         } else {
                             sb.append("  (Sin habitaciones)\n")
@@ -239,12 +260,12 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
     }
 
     fun mostrarHoteles(db: SQLiteDatabase): Cursor {
-        return db.rawQuery("SELECT id, nombre, direccion, telefono FROM HOTELES", null)
+        return db.rawQuery("SELECT id, nombre, direccion, telefono, foto FROM HOTELES", null)
     }
 
     fun mostrarHabitacionesPorHotel(db: SQLiteDatabase, hotelId: Long): Cursor {
         return db.rawQuery(
-            "SELECT id, numero_habitacion, tipo, precio FROM habitaciones WHERE id_hotel = ?",
+            "SELECT id, numero_habitacion, tipo, precio, foto FROM habitaciones WHERE id_hotel = ?",
             arrayOf(hotelId.toString())
         )
     }
@@ -275,5 +296,22 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, dataBaseName,
         val db = this.writableDatabase
         val result = db.delete("reservas", "id = ?", arrayOf(reservaId.toString()))
         return result > 0
+    }
+
+    // Nuevos métodos para obtener información específica con fotos
+    fun obtenerHotelConFoto(hotelId: Long): Cursor {
+        val db = this.readableDatabase
+        return db.rawQuery(
+            "SELECT id, nombre, direccion, telefono, foto FROM HOTELES WHERE id = ?",
+            arrayOf(hotelId.toString())
+        )
+    }
+
+    fun obtenerHabitacionConFoto(habitacionId: Long): Cursor {
+        val db = this.readableDatabase
+        return db.rawQuery(
+            "SELECT id, id_hotel, numero_habitacion, tipo, precio, foto FROM habitaciones WHERE id = ?",
+            arrayOf(habitacionId.toString())
+        )
     }
 }

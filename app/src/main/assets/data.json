@@ -1,0 +1,74 @@
+{
+        "usuarios": [
+          { "username": "user1", "password": "pass1" },
+          { "username": "user2", "password": "pass2" },
+          { "username": "user3", "password": "pass3" }
+        ],
+        "hoteles": [
+          {
+            "nombre": "Hotel Sol y Mar",
+            "direccion": "Av. del Mar 123",
+            "telefono": "600-111-222",
+            "foto": "hotel_sol_y_mar.jpg",
+            "habitaciones": [
+              { "numero_habitacion": 1, "tipo": "Individual", "precio": 60.0, "foto": "hotel1_room1.jpg" },
+              { "numero_habitacion": 2, "tipo": "Doble", "precio": 70.0, "foto": "hotel1_room2.jpg" },
+              { "numero_habitacion": 3, "tipo": "Suite", "precio": 90.0, "foto": "hotel1_room3.jpg" },
+              { "numero_habitacion": 4, "tipo": "Familiar", "precio": 110.0, "foto": "hotel1_room4.jpg" },
+              { "numero_habitacion": 5, "tipo": "Económica", "precio": 55.0, "foto": "hotel1_room5.jpg" }
+            ]
+          },
+          {
+            "nombre": "Hotel La Rivera",
+            "direccion": "Calle Rivera 45",
+            "telefono": "600-222-333",
+            "foto": "hotel_la_rivera.jpg",
+            "habitaciones": [
+              { "numero_habitacion": 1, "tipo": "Individual", "precio": 65.0, "foto": "hotel2_room1.jpg" },
+              { "numero_habitacion": 2, "tipo": "Doble", "precio": 75.0, "foto": "hotel2_room2.jpg" },
+              { "numero_habitacion": 3, "tipo": "Suite", "precio": 95.0, "foto": "hotel2_room3.jpg" },
+              { "numero_habitacion": 4, "tipo": "Familiar", "precio": 115.0, "foto": "hotel2_room4.jpg" },
+              { "numero_habitacion": 5, "tipo": "Económica", "precio": 60.0, "foto": "hotel2_room5.jpg" }
+            ]
+          },
+          {
+            "nombre": "Hotel Montaña Azul",
+            "direccion": "Camino Alto 78",
+            "telefono": "600-333-444",
+            "foto": "hotel_montana_azul.jpg",
+            "habitaciones": [
+              { "numero_habitacion": 1, "tipo": "Individual", "precio": 70.0, "foto": "hotel3_room1.jpg" },
+              { "numero_habitacion": 2, "tipo": "Doble", "precio": 80.0, "foto": "hotel3_room2.jpg" },
+              { "numero_habitacion": 3, "tipo": "Suite", "precio": 100.0, "foto": "hotel3_room3.jpg" },
+              { "numero_habitacion": 4, "tipo": "Familiar", "precio": 120.0, "foto": "hotel3_room4.jpg" },
+              { "numero_habitacion": 5, "tipo": "Económica", "precio": 65.0, "foto": "hotel3_room5.jpg" }
+            ]
+          },
+          {
+            "nombre": "Hotel Centro Plaza",
+            "direccion": "Plaza Central 1",
+            "telefono": "600-444-555",
+            "foto": "hotel_centro_plaza.jpg",
+            "habitaciones": [
+              { "numero_habitacion": 1, "tipo": "Individual", "precio": 68.0, "foto": "hotel4_room1.jpg" },
+              { "numero_habitacion": 2, "tipo": "Doble", "precio": 78.0, "foto": "hotel4_room2.jpg" },
+              { "numero_habitacion": 3, "tipo": "Suite", "precio": 98.0, "foto": "hotel4_room3.jpg" },
+              { "numero_habitacion": 4, "tipo": "Familiar", "precio": 118.0, "foto": "hotel4_room4.jpg" },
+              { "numero_habitacion": 5, "tipo": "Económica", "precio": 63.0, "foto": "hotel4_room5.jpg" }
+            ]
+          },
+          {
+            "nombre": "Hotel Jardín del Lago",
+            "direccion": "Paseo del Lago 9",
+            "telefono": "600-555-666",
+            "foto": "hotel_jardin_lago.jpg",
+            "habitaciones": [
+              { "numero_habitacion": 1, "tipo": "Individual", "precio": 72.0, "foto": "hotel5_room1.jpg" },
+              { "numero_habitacion": 2, "tipo": "Doble", "precio": 82.0, "foto": "hotel5_room2.jpg" },
+              { "numero_habitacion": 3, "tipo": "Suite", "precio": 102.0, "foto": "hotel5_room3.jpg" },
+              { "numero_habitacion": 4, "tipo": "Familiar", "precio": 122.0, "foto": "hotel5_room4.jpg" },
+              { "numero_habitacion": 5, "tipo": "Económica", "precio": 67.0, "foto": "hotel5_room5.jpg" }
+            ]
+          }
+        ]
+      }
