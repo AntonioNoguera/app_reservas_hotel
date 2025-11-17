@@ -142,17 +142,17 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, d
                 }
 
                 // Insertar usuarios
-                for (i in 0 until usuariosArray.length()) {
-                    val uObj = usuariosArray.optJSONObject(i) ?: continue
-                    val username = uObj.optString("username", null) ?: continue
-                    val password = uObj.optString("password", "")
-                    val uv = ContentValues().apply {
-                        put("username", username)
-                        put("password", password)
-                    }
-                    db.insertWithOnConflict("usuarios", null, uv, SQLiteDatabase.CONFLICT_IGNORE)
-                    insertedAny = true
-                }
+//                for (i in 0 until usuariosArray.length()) {
+//                    val uObj = usuariosArray.optJSONObject(i) ?: continue
+//                    val username = uObj.optString("username", null) ?: continue
+//                    val password = uObj.optString("password", "")
+//                    val uv = ContentValues().apply {
+//                        put("username", username)
+//                        put("password", password)
+//                    }
+//                    db.insertWithOnConflict("usuarios", null, uv, SQLiteDatabase.CONFLICT_IGNORE)
+//                    insertedAny = true
+//                }
 
                 db.setTransactionSuccessful()
             } finally {

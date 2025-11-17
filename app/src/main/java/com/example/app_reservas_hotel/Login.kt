@@ -3,49 +3,118 @@ package com.example.app_reservas_hotel
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
-import android.widget.Button
-import android.widget.EditText
+import android.text.Editable
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.example.app_reservas_hotel.databinding.ActivityLoginBinding
+import com.example.data.database.AppDatabase
+import com.example.data.user.repository.UserRepositoryImpl
+import com.example.domain.user.use_case.LoginUseCase
+import com.example.domain.user.use_case.RegisterUseCase
+import com.example.domain.user.entities.UserEntity
+import kotlinx.coroutines.launch
 
 class Login : AppCompatActivity() {
-    private val TAG = "login"
+    private lateinit var loginUseCase: LoginUseCase
+    private lateinit var registerUserUseCase: RegisterUseCase
+
+    private lateinit var binding: ActivityLoginBinding
+
+    private var username: Editable? = null
+    private var password: Editable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
-        val BtnLogin = findViewById<Button>(R.id.BtnLogin)
-        val TboxUser = findViewById<EditText>(R.id.TboxUser)
-        val TboxPassword = findViewById<EditText>(R.id.TboxUsuarioPassword)
+        // Inicializar Use Cases (Por que no hay DI - Data Injection)
+        val database = AppDatabase.getDatabase(this)
+        val userRepository = UserRepositoryImpl(database.userDao())
 
-        BtnLogin.setOnClickListener {
-            val username = TboxUser.text.toString().trim()
-            val password = TboxPassword.text.toString().trim()
+        loginUseCase = LoginUseCase(userRepository)
+        registerUserUseCase = RegisterUseCase(userRepository)
 
-            if (username.isNotEmpty() && password.isNotEmpty()) {
-                attemptLogin(username, password)
-            } else {
-                Toast.makeText(this, "Ingrese usuario y contraseña", Toast.LENGTH_SHORT).show()
+
+        binding = ActivityLoginBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        this.setUpBinding()
+        this.setActions()
+    }
+
+    private fun setUpBinding() {
+        binding.apply {
+            username = TboxUser.text
+            password = TboxUsuarioPassword.text
+        }
+    }
+
+    private fun setActions() {
+        // set login
+        binding.apply {
+            BtnLogin.setOnClickListener { login() }
+            btnRedirectRegister.setOnClickListener { register() }
+        }
+    }
+
+    private fun login() {
+        lifecycleScope.launch {
+            val result: Result<UserEntity> = loginUseCase(
+                username.toStringTrimmed(),
+                password.toStringTrimmed()
+            )
+
+            result.onSuccess { user ->
+                Toast.makeText(
+                    this@Login,
+                    "Bienvenido ${user.username}",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+                val intent = Intent(this@Login, MainActivity::class.java)
+                intent.putExtra("username", user.username)
+                startActivity(intent)
+                finish()
+            }
+
+            result.onFailure { exception ->
+                Toast.makeText(
+                    this@Login,
+                    exception.message ?: "Error desconocido",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
 
-    private fun attemptLogin(username: String, password: String) {
-        val dbHelper = DatabaseHelper(this)
-        try {
-            val success = dbHelper.iniciarSesion(username, password)
-            if (success) {
-                val intent = Intent(this, HotelesActivity::class.java)
-                intent.putExtra("username", username)
-                startActivity(intent)
-                finish()
-            } else {
-                Toast.makeText(this, "Usuario o contraseña incorrectos", Toast.LENGTH_SHORT).show()
+    private fun register() {
+        lifecycleScope.launch {
+            val result: Result<Long> = registerUserUseCase(
+                username.toStringTrimmed(),
+                password.toStringTrimmed()
+            )
+
+            result.onSuccess { userID ->
+                Toast.makeText(
+                    this@Login,
+                    "Creado usuario: ${username} con ID: ${userID}",
+                    Toast.LENGTH_SHORT
+                ).show()
+
             }
-        } finally {
-            dbHelper.close()
+
+            result.onFailure { exception ->
+                Toast.makeText(
+                    this@Login,
+                    exception.message ?: "Error desconocido",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         }
+    }
+
+    fun Editable?.toStringTrimmed(): String {
+        return this?.toString()?.trim() ?: ""
     }
 }

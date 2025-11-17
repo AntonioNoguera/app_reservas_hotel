@@ -1,24 +1,20 @@
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    id("com.google.devtools.ksp")
 }
 
 android {
-    namespace = "com.example.app_reservas_hotel"
-    compileSdk = 36
-
-    defaultConfig {
-        applicationId = "com.example.app_reservas_hotel"
-        minSdk = 24
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    namespace = "com.example.data"
+    compileSdk {
+        version = release(36)
     }
 
-    buildFeatures {
-        viewBinding = true  // ← AGREGAR ESTO
+    defaultConfig {
+        minSdk = 24
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles("consumer-rules.pro")
     }
 
     buildTypes {
@@ -41,19 +37,16 @@ android {
 
 dependencies {
     implementation(project(":domain"))
-    implementation(project(":data"))
 
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.androidx.activity)
-    implementation(libs.androidx.constraintlayout)
-    // Glide para carga eficiente de imágenes desde assets o URL
-    implementation(libs.glide)
+    // Room
+    ksp(libs.room.compiler)
 
     implementation(libs.room.ktx)
     implementation(libs.room.runtime)
 
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
